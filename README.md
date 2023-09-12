@@ -9,21 +9,25 @@
 ## Overview
 
 This is a module for the Insight Toolkit ([ITK](https://github.com/InsightSoftwareConsortium/ITK)). The module includes a filter to extract a PointSet from a labeled image.
+Additional filters and IO classes may be added in future versions to support pointset registration workflows.
 
 ```python
     import itk
-    skull_mask = itk.imread('path/to/skull_with_holes.mha').astype(itk.US)
 
-    ImageType = type(skull_mask)
-    MaskType = itk.Image[itk.UC, 3]
+    labels = itk.imread('path/to/labelmap.mha').astype(itk.US)
+    D = labels.ndim
 
-    top_control = itk.FixTopologyCarveOutside[ImageType, ImageType, MaskType].New()
-    top_control.SetInput(skull_mask)
-    top_control.SetRadius(5)
-    top_control.Update()
-    skull_mask_closed = top_control.GetOutput()
+    ImageType = type(labels)
+    PointSetType = itk.PointSet[itk.US, D]
 
-    itk.imwrite(skull_mask_closed, 'skull_mask_closed.mha')
+    extractor = itk.LabelToPointSetFilter[ImageType, PointSetType].New()
+    extractor.SetInput(labels)
+    extractor.Update()
+    point_set = extractor.GetOutput()
+
+    data = point_set.GetPointData()
+    for i in range(point_set.GetNumberOfPoints()):
+      print(f"{i}: {point_set.GetPoint(i)}, {data.GetElement(i)}")
 ```
 
 ## Installation

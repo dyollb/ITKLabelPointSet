@@ -45,4 +45,4 @@ setup(
     keywords='ITK InsightToolkit',
     url=r"https://github.com/dyollb/ITKLabelPointSet",
     install_requires=[r"itk==5.3.0"],
-    )
+)
