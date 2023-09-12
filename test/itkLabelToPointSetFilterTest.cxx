@@ -56,16 +56,6 @@ public:
 int
 itkLabelToPointSetFilterTest(int argc, char * argv[])
 {
-  if (argc < 2)
-  {
-    std::cerr << "Missing parameters." << std::endl;
-    std::cerr << "Usage: " << itkNameOfTestExecutableMacro(argv);
-    std::cerr << " outputImage";
-    std::cerr << std::endl;
-    return EXIT_FAILURE;
-  }
-  const char * outputImageFileName = argv[1];
-
   constexpr unsigned int Dimension = 2;
   using PixelType = unsigned short;
   using ImageType = itk::Image<PixelType, Dimension>;
@@ -84,20 +74,45 @@ itkLabelToPointSetFilterTest(int argc, char * argv[])
   image->SetRegions(size);
   image->Allocate();
   image->FillBuffer(0);
+  double spacing[] = { 1.1, 0.87 };
+  image->SetSpacing(spacing);
+
+  std::vector<ImageType::IndexType> ids = { { 0, 2 }, { 18, 19 }, { 25, 25 }, { 80, 45 } };
+  for (size_t i = 0; i < ids.size(); ++i)
+  {
+    image->SetPixel(ids[i], static_cast<PixelType>(i + 1));
+  }
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver(itk::ProgressEvent(), showProgress);
   filter->SetInput(image);
 
-  /*
-  using WriterType = itk::MeshFileWriter<PointSetType>;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName(outputImageFileName);
-  writer->SetInput(filter->GetOutput());
-  writer->SetUseCompression(true);
+  ITK_TRY_EXPECT_NO_EXCEPTION(filter->Update());
 
-  ITK_TRY_EXPECT_NO_EXCEPTION(writer->Update());
-  */
+  auto point_set = filter->GetOutput();
+  auto points = point_set->GetPoints();
+  auto data = point_set->GetPointData();
+
+  size_t num_failures = 0;
+  size_t k = 0;
+  for (auto p : *points)
+  {
+    auto pixel_value = data->at(k++);
+    auto index = ids.at(pixel_value - 1);
+    auto p2 = image->TransformIndexToPhysicalPoint<float>(index);
+    auto diff = p.EuclideanDistanceTo(p2);
+    if (diff > 1e-6)
+    {
+      std::cerr << "Point with pixel value '" << pixel_value << "' has is incorrect position.\n";
+      num_failures++;
+    }
+  }
+
+  if (num_failures > 0)
+  {
+    std::cerr << "Test failed." << std::endl;
+    return EXIT_FAILURE;
+  }
 
   std::cout << "Test finished." << std::endl;
   return EXIT_SUCCESS;
