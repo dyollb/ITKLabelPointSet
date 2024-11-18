@@ -77,7 +77,7 @@ LabelToPointSetFilter<TInputImage, TOutputMesh>::GenerateData()
   ProgressReporter progress(this, 0, static_cast<SizeValueType>(numberOfPixels));
 
   std::random_device               rd; // Non-deterministic random device
-  std::mt19937                     gen((this->m_SamplingRandomSeed >= 0) : this->m_SamplingRandomSeed : rd());
+  std::mt19937                     gen((this->m_SamplingRandomSeed >= 0) ? this->m_SamplingRandomSeed : rd());
   std::uniform_real_distribution<> dis_real(0.0, 1.0);
 
   PointType point;
