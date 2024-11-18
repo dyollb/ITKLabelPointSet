@@ -83,32 +83,48 @@ itkLabelToPointSetFilterTest(int argc, char * argv[])
     image->SetPixel(ids[i], static_cast<PixelType>(i + 1));
   }
 
+  auto check_output = [&ids, &image](PointSetType * point_set) -> size_t {
+    auto points = point_set->GetPoints();
+    auto data = point_set->GetPointData();
+
+    size_t num_failures = 0;
+    size_t k = 0;
+    for (auto p : *points)
+    {
+      auto pixel_value = data->at(k++);
+      auto index = ids.at(pixel_value - 1);
+      auto p2 = image->TransformIndexToPhysicalPoint<float>(index);
+      auto diff = p.EuclideanDistanceTo(p2);
+      if (diff > 1e-6)
+      {
+        std::cerr << "Point with pixel value '" << pixel_value << "' has is incorrect position.\n";
+        num_failures++;
+      }
+    }
+    return num_failures;
+  };
+
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver(itk::ProgressEvent(), showProgress);
   filter->SetInput(image);
 
   ITK_TRY_EXPECT_NO_EXCEPTION(filter->Update());
 
-  auto point_set = filter->GetOutput();
-  auto points = point_set->GetPoints();
-  auto data = point_set->GetPointData();
-
-  size_t num_failures = 0;
-  size_t k = 0;
-  for (auto p : *points)
+  auto num_failures = check_output(filter->GetOutput());
+  if (num_failures > 0)
   {
-    auto pixel_value = data->at(k++);
-    auto index = ids.at(pixel_value - 1);
-    auto p2 = image->TransformIndexToPhysicalPoint<float>(index);
-    auto diff = p.EuclideanDistanceTo(p2);
-    if (diff > 1e-6)
-    {
-      std::cerr << "Point with pixel value '" << pixel_value << "' has is incorrect position.\n";
-      num_failures++;
-    }
+    std::cerr << "Test failed." << std::endl;
+    return EXIT_FAILURE;
   }
 
-  if (num_failures > 0)
+  // not a real test, but at least the API is used and
+  filter->SetSamplingRandomSeed(101);
+  filter->SetSamplingPercentage(0.5);
+
+  ITK_TRY_EXPECT_NO_EXCEPTION(filter->Update());
+
+  auto num_failures_sample = check_output(filter->GetOutput());
+  if (num_failures_sample > 0)
   {
     std::cerr << "Test failed." << std::endl;
     return EXIT_FAILURE;
