@@ -74,6 +74,12 @@ public:
   void
   SetInput(const InputImageType * inputImage);
 
+  itkSetMacro(SamplingPercentage, double);
+  itkGetConstMacro(SamplingPercentage, double);
+
+  itkSetMacro(SamplingRandomSeed, int);
+  itkGetConstMacro(SamplingRandomSeed, int);
+
 protected:
   LabelToPointSetFilter();
   ~LabelToPointSetFilter() override = default;
@@ -94,6 +100,9 @@ private:
   // Add concept checking such as
   // itkConceptMacro( FloatingPointPixel, ( itk::Concept::IsFloatingPoint< typename InputImageType::PixelType > ) );
 #endif
+
+  double m_SamplingPercentage{ 1.0 };
+  int    m_SamplingRandomSeed{ -1 };
 };
 } // namespace itk
 

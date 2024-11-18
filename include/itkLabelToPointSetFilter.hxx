@@ -23,6 +23,8 @@
 #include "itkImageRegionConstIterator.h"
 #include "itkProgressReporter.h"
 
+#include <random>
+
 namespace itk
 {
 
@@ -74,6 +76,10 @@ LabelToPointSetFilter<TInputImage, TOutputMesh>::GenerateData()
   auto             numberOfPixels = region.GetNumberOfPixels();
   ProgressReporter progress(this, 0, static_cast<SizeValueType>(numberOfPixels));
 
+  std::random_device               rd; // Non-deterministic random device
+  std::mt19937                     gen((this->m_SamplingRandomSeed >= 0) ? this->m_SamplingRandomSeed : rd());
+  std::uniform_real_distribution<> dis_real(0.0, 1.0);
+
   PointType point;
 
   ImageRegionConstIterator<TInputImage> it(image, region);
@@ -81,9 +87,18 @@ LabelToPointSetFilter<TInputImage, TOutputMesh>::GenerateData()
   {
     if (it.Get() != 0)
     {
-      image->TransformIndexToPhysicalPoint(it.GetIndex(), point);
-      points->push_back(point);
-      pointData->push_back(it.Get());
+      bool add_point = this->m_SamplingPercentage == 1.0;
+      if (!add_point)
+      {
+        add_point = (dis_real(gen) < this->m_SamplingPercentage);
+      }
+
+      if (add_point)
+      {
+        image->TransformIndexToPhysicalPoint(it.GetIndex(), point);
+        points->push_back(point);
+        pointData->push_back(it.Get());
+      }
     }
     progress.CompletedPixel();
   }
