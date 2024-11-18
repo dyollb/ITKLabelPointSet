@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "itk-labelpointset"
-version = "0.2.0"
+version = "0.3.0"
 description = "ITK Module to extract a PointSet from a labeled image"
 readme = "README.md"
 license = {file = "LICENSE"}
